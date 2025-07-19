@@ -12,7 +12,6 @@ typedef struct {
   upng_t* upng_ptr;
 } texture_t;
 
-texture_t wall_textures[NUM_TEXTURES];
 void load_wall_textures();
 void free_wall_textures();
 

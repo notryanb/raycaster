@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdint.h>
+#include <math.h>
+#include <memory.h>
 #include <limits.h>
 #include <SDL2/SDL.h>
+
 #include "constants.h"
 #include "textures.h"
 
@@ -56,6 +59,7 @@ float distance_to_projection_plane = 0;
 
 SDL_Texture* color_buffer_texture = NULL;
 uint32_t* color_buffer = NULL;
+texture_t wall_textures[NUM_TEXTURES];
 
 /// HELPER FUNCTIONS
 float degrees_to_radians(float degrees) {
@@ -78,12 +82,6 @@ int map_has_wall_at(float x, float y) {
     return TRUE;
   }  
 
-  /*
-  int map_grid_idx_x = floor(x / TILE_SIZE);
-  int map_grid_idx_y = floor(y / TILE_SIZE);
-
-  return map[map_grid_idx_y][map_grid_idx_x] != 0;
-  */
   return map_get_wall_content_at(x, y) != 0;
 }
 
@@ -126,7 +124,7 @@ void destroy_window() {
   SDL_DestroyWindow(window);
 
   free(color_buffer);
-  free_wall_textures();
+  free_wall_textures(wall_textures);
 
   SDL_DestroyTexture(color_buffer_texture);
   SDL_Quit();
@@ -210,7 +208,7 @@ void setup() {
     WINDOW_HEIGHT
   );
 
-  load_wall_textures();
+  load_wall_textures(wall_textures);
 }
 
 void move_player(float delta_time) {
