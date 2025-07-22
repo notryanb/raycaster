@@ -1,28 +1,15 @@
+#include "constants.h"
+#include "graphics.h"
+#include "map.h"
+#include "textures.h"
+
 #include <stdio.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <math.h>
 #include <memory.h>
 #include <limits.h>
 #include <SDL2/SDL.h>
-
-#include "constants.h"
-#include "textures.h"
-
-const int map[MAP_NUM_ROWS][MAP_NUM_COLS] = {
-  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-  {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {1, 0, 0, 0, 2, 0, 3, 0, 4, 0, 5, 0, 6, 0, 7, 0, 8, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 7, 7, 7, 7, 7, 0, 0, 1},
-  {1, 0, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1},
-  {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-};
 
 struct Player {
   float x;
@@ -41,24 +28,14 @@ struct Ray {
   float wall_hit_x;
   float wall_hit_y;
   float distance;
-  int is_ray_facing_up;
-  int is_ray_facing_down;
-  int is_ray_facing_left;
-  int is_ray_facing_right;
-  int was_hit_vertical;
+  bool was_hit_vertical;
   int wall_hit_content;
 } rays[NUM_RAYS];
 
-SDL_Window* window = NULL;
-SDL_Renderer* renderer = NULL;
-int is_game_running = FALSE;
+bool is_game_running = false;
 int ticks_last_frame = 0;
-int should_display_minimap = 0;
+bool should_display_minimap = false;
 float distance_to_projection_plane = 0;
-
-
-SDL_Texture* color_buffer_texture = NULL;
-uint32_t* color_buffer = NULL;
 texture_t wall_textures[NUM_TEXTURES];
 
 /// HELPER FUNCTIONS
@@ -66,69 +43,7 @@ float degrees_to_radians(float degrees) {
   return degrees * (PI / 180.0f);
 }
 
-int map_get_wall_content_at(float x, float y) {
-  if (x < 0 || x > WINDOW_WIDTH || y < 0 || y > WINDOW_HEIGHT) {
-    return 0;
-  }  
 
-  int map_grid_idx_x = floor(x / TILE_SIZE);
-  int map_grid_idx_y = floor(y / TILE_SIZE);
-
-  return map[map_grid_idx_y][map_grid_idx_x];
-}
-
-int map_has_wall_at(float x, float y) {
-  if (x < 0 || x > WINDOW_WIDTH || y < 0 || y > WINDOW_HEIGHT) {
-    return TRUE;
-  }  
-
-  return map_get_wall_content_at(x, y) != 0;
-}
-
-
-/// GAME FUNCTIONS
-int initialize_window() {
-  if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
-    fprintf(stderr, "error initializing SDL.\n");
-    return FALSE;
-  }
-
-  window = SDL_CreateWindow(
-    NULL, //"Ray Caster",
-    SDL_WINDOWPOS_CENTERED,
-    SDL_WINDOWPOS_CENTERED,
-    WINDOW_WIDTH,
-    WINDOW_HEIGHT,
-    SDL_WINDOW_BORDERLESS
-  );
-
-  if (!window) {
-      fprintf(stderr, "error creating SDL window.\n");
-      return FALSE;
-  }
-
-  renderer = SDL_CreateRenderer(window, -1, 0);
-  
-  if (!renderer) {
-      fprintf(stderr, "error creating SDL renderer.\n");
-      return FALSE;
-  }
-
-  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
-
-  return TRUE;
-}
-
-void destroy_window() {
-  SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
-
-  free(color_buffer);
-  free_wall_textures(wall_textures);
-
-  SDL_DestroyTexture(color_buffer_texture);
-  SDL_Quit();
-}
 
 void process_input() {
   SDL_Event event;
@@ -136,12 +51,12 @@ void process_input() {
 
   switch (event.type) {
     case SDL_QUIT: {
-        is_game_running = FALSE;
+        is_game_running = false;
         break;
       }
     case SDL_KEYDOWN: {
         if (event.key.keysym.sym == SDLK_ESCAPE) {
-          is_game_running = FALSE;
+          is_game_running = false;
         }
         if (event.key.keysym.sym == SDLK_UP) {
           player.walk_direction = +1;
@@ -197,17 +112,6 @@ void setup() {
   player.rotation_angle = degrees_to_radians(90);
   player.rotation_speed = degrees_to_radians(45);
 
-  // allocate the total amount of bytes in memory to hold the color buffer
-  color_buffer = (uint32_t*) malloc(sizeof(uint32_t) * (uint32_t)WINDOW_WIDTH * (uint32_t)WINDOW_HEIGHT);
-  
-  color_buffer_texture = SDL_CreateTexture(
-    renderer,
-    SDL_PIXELFORMAT_RGBA32,
-    SDL_TEXTUREACCESS_STREAMING,
-    WINDOW_WIDTH,
-    WINDOW_HEIGHT
-  );
-
   load_wall_textures(wall_textures);
 }
 
@@ -241,17 +145,17 @@ float distance_between_points(float x1, float y1, float x2, float y2) {
 void cast_ray(float ray_angle, int strip_id) {
   ray_angle = normalize_angle(ray_angle);
 
-  int is_ray_facing_down = ray_angle > 0 && ray_angle < PI;
-  int is_ray_facing_up = !is_ray_facing_down;
+  bool is_ray_facing_down = ray_angle > 0 && ray_angle < PI;
+  bool is_ray_facing_up = !is_ray_facing_down;
 
-  int is_ray_facing_right = ray_angle < degrees_to_radians(90) || ray_angle > degrees_to_radians(270);
-  int is_ray_facing_left = !is_ray_facing_right;
+  bool is_ray_facing_right = ray_angle < degrees_to_radians(90) || ray_angle > degrees_to_radians(270);
+  bool is_ray_facing_left = !is_ray_facing_right;
 
   float x_intercept, y_intercept;
   float x_step, y_step;
 
   // Horizontal cast: Walk the map grid, not individual pixels
-  int found_horizontal_wall_hit = FALSE;
+  bool found_horizontal_wall_hit = false;
   int horizontal_wall_hit_content = 0;
   float horizontal_wall_hit_x = 0;
   float horizontal_wall_hit_y = 0;
@@ -276,9 +180,9 @@ void cast_ray(float ray_angle, int strip_id) {
   // Increment x/y Steps until we find a wall
   while (
     next_horizontal_touch_x >= 0 
-    && next_horizontal_touch_x <= WINDOW_WIDTH
+    && next_horizontal_touch_x <= MAP_WIDTH
     && next_horizontal_touch_y >= 0 
-    && next_horizontal_touch_y <= WINDOW_HEIGHT 
+    && next_horizontal_touch_y <= MAP_HEIGHT 
   ) {
     int grid_content = map_get_wall_content_at(
       next_horizontal_touch_x,
@@ -290,7 +194,7 @@ void cast_ray(float ray_angle, int strip_id) {
       horizontal_wall_hit_x = next_horizontal_touch_x;
       horizontal_wall_hit_y = next_horizontal_touch_y;
       horizontal_wall_hit_content = grid_content;
-      found_horizontal_wall_hit = TRUE;
+      found_horizontal_wall_hit = true;
       break;
     } else {
       next_horizontal_touch_x += x_step;
@@ -300,7 +204,7 @@ void cast_ray(float ray_angle, int strip_id) {
 
   // Vertical cast: Walk the map grid, not individual pixels
   int vertical_wall_hit_content = 0;
-  int found_vertical_wall_hit = FALSE;
+  bool found_vertical_wall_hit = false;
   float vertical_wall_hit_x = 0;
   float vertical_wall_hit_y = 0;
 
@@ -324,9 +228,9 @@ void cast_ray(float ray_angle, int strip_id) {
   // Increment x/y Steps until we find a wall
   while (
     next_vertical_touch_x >= 0 
-    && next_vertical_touch_x <= WINDOW_WIDTH
+    && next_vertical_touch_x <= MAP_WIDTH
     && next_vertical_touch_y >= 0 
-    && next_vertical_touch_y <= WINDOW_HEIGHT 
+    && next_vertical_touch_y <= MAP_HEIGHT 
   ) {
     int grid_content = map_get_wall_content_at(
       next_vertical_touch_x + (is_ray_facing_left ? -1 : 0),
@@ -338,7 +242,7 @@ void cast_ray(float ray_angle, int strip_id) {
       vertical_wall_hit_x = next_vertical_touch_x;
       vertical_wall_hit_y = next_vertical_touch_y;
       vertical_wall_hit_content = grid_content;
-      found_vertical_wall_hit = TRUE;
+      found_vertical_wall_hit = true;
       break;
     } else {
       next_vertical_touch_x += x_step;
@@ -356,25 +260,21 @@ void cast_ray(float ray_angle, int strip_id) {
     : FLT_MAX;
 
   // TODO: I should probably pass in a ref to the Ray rather than the strip id
+  rays[strip_id].ray_angle = ray_angle;
+
   if (vertical_hit_distance < horizontal_hit_distance) {
     rays[strip_id].distance = vertical_hit_distance;
     rays[strip_id].wall_hit_x = vertical_wall_hit_x;
     rays[strip_id].wall_hit_y = vertical_wall_hit_y;
     rays[strip_id].wall_hit_content = vertical_wall_hit_content;
-    rays[strip_id].was_hit_vertical = TRUE;
+    rays[strip_id].was_hit_vertical = true;
   } else {
     rays[strip_id].distance = horizontal_hit_distance;
     rays[strip_id].wall_hit_x = horizontal_wall_hit_x;
     rays[strip_id].wall_hit_y = horizontal_wall_hit_y;
     rays[strip_id].wall_hit_content = horizontal_wall_hit_content;
-    rays[strip_id].was_hit_vertical = FALSE;
+    rays[strip_id].was_hit_vertical = false;
   }
-
-  rays[strip_id].ray_angle = ray_angle;
-  rays[strip_id].is_ray_facing_up = is_ray_facing_up;
-  rays[strip_id].is_ray_facing_down = is_ray_facing_down;
-  rays[strip_id].is_ray_facing_left = is_ray_facing_left;
-  rays[strip_id].is_ray_facing_right = is_ray_facing_right;
 }
 
 void cast_all_rays() {
@@ -387,59 +287,39 @@ void cast_all_rays() {
 }
 
 void render_rays() {
-  SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+  // SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
 
-  for (int i = 0; i < NUM_RAYS; i++) {
-    SDL_RenderDrawLine(
-      renderer,
-      MINIMAP_SCALE_FACTOR * player.x,
-      MINIMAP_SCALE_FACTOR * player.y,
-      MINIMAP_SCALE_FACTOR * rays[i].wall_hit_x,
-      MINIMAP_SCALE_FACTOR * rays[i].wall_hit_y
-    );
-  }
+  // for (int i = 0; i < NUM_RAYS; i++) {
+  //   SDL_RenderDrawLine(
+  //     renderer,
+  //     MINIMAP_SCALE_FACTOR * player.x,
+  //     MINIMAP_SCALE_FACTOR * player.y,
+  //     MINIMAP_SCALE_FACTOR * rays[i].wall_hit_x,
+  //     MINIMAP_SCALE_FACTOR * rays[i].wall_hit_y
+  //   );
+  // }
 }
 
-void render_map() {
-  for (int i = 0; i < MAP_NUM_ROWS; i++) {
-    for (int j = 0; j < MAP_NUM_COLS; j++) {
-      int tile_x = j * TILE_SIZE;
-      int tile_y = i * TILE_SIZE;
-      int tile_color = map[i][j] != 0 ? 255 : 0;
-
-      int alpha = 255;
-      SDL_SetRenderDrawColor(renderer, tile_color, tile_color, tile_color, alpha);
-      SDL_Rect map_tile_rect = {
-        tile_x * MINIMAP_SCALE_FACTOR,
-        tile_y * MINIMAP_SCALE_FACTOR,
-        TILE_SIZE * MINIMAP_SCALE_FACTOR, 
-        TILE_SIZE * MINIMAP_SCALE_FACTOR
-      };
-
-      SDL_RenderFillRect(renderer, &map_tile_rect);
-    }
-  }
-}
 
 void render_player() {
-  SDL_SetRenderDrawColor(renderer, 100, 255, 100, 255);
-  SDL_Rect player_rect = {
-    player.x * MINIMAP_SCALE_FACTOR,
-    player.y * MINIMAP_SCALE_FACTOR,
-    player.width * MINIMAP_SCALE_FACTOR,
-    player.height * MINIMAP_SCALE_FACTOR
-  };
+  // SDL_SetRenderDrawColor(renderer, 100, 255, 100, 255);
+  // SDL_Rect player_rect = {
+  //   player.x * MINIMAP_SCALE_FACTOR,
+  //   player.y * MINIMAP_SCALE_FACTOR,
+  //   player.width * MINIMAP_SCALE_FACTOR,
+  //   player.height * MINIMAP_SCALE_FACTOR
+  // };
 
-  SDL_RenderFillRect(renderer, &player_rect);
+  // SDL_RenderFillRect(renderer, &player_rect);
 
-  int line_length_px = 32;
-  SDL_RenderDrawLine(
-    renderer,
-    player.x * MINIMAP_SCALE_FACTOR,
-    player.y * MINIMAP_SCALE_FACTOR,
-    MINIMAP_SCALE_FACTOR * player.x + cos(player.rotation_angle) * line_length_px,
-    MINIMAP_SCALE_FACTOR * player.y + sin(player.rotation_angle) * line_length_px
-  );
+  // int line_length_px = 32;
+  // SDL_RenderDrawLine(
+  //   renderer,
+  //   player.x * MINIMAP_SCALE_FACTOR,
+  //   player.y * MINIMAP_SCALE_FACTOR,
+  //   MINIMAP_SCALE_FACTOR * player.x + cos(player.rotation_angle) * line_length_px,
+  //   MINIMAP_SCALE_FACTOR * player.y + sin(player.rotation_angle) * line_length_px
+  // );
 }
 
 
@@ -460,9 +340,9 @@ void update() {
 }
 
 void generate_3d_projection() {
-  for (int i = 0; i < NUM_RAYS; i++) {
+  for (int x = 0; x < NUM_RAYS; x++) {
     // Fix "fisheye" distortion
-    float perpendicular_distance = rays[i].distance * cos(rays[i].ray_angle - player.rotation_angle);
+    float perpendicular_distance = rays[x].distance * cos(rays[x].ray_angle - player.rotation_angle);
     float projected_wall_height = (TILE_SIZE / perpendicular_distance) * distance_to_projection_plane;
 
     int wall_top_pixel = (WINDOW_HEIGHT / 2.0f) - (projected_wall_height / 2.0f);
@@ -473,18 +353,18 @@ void generate_3d_projection() {
 
     // Ceiling render
     for (int y = 0; y < wall_top_pixel; y++) {
-        color_buffer[(WINDOW_WIDTH * y) + i] = 0xFF565656;
+        draw_pixel(x, y, 0xFF565656);
     }
 
     // Walls render
     int texture_offset_x;
-    if (rays[i].was_hit_vertical) {
-      texture_offset_x = (int)rays[i].wall_hit_y % TILE_SIZE;
+    if (rays[x].was_hit_vertical) {
+      texture_offset_x = (int)rays[x].wall_hit_y % TILE_SIZE;
     } else {
-      texture_offset_x = (int)rays[i].wall_hit_x % TILE_SIZE;
+      texture_offset_x = (int)rays[x].wall_hit_x % TILE_SIZE;
     }
 
-    int texture_num = rays[i].wall_hit_content - 1; // 0 is empty space, so there is off-by-one issue
+    int texture_num = rays[x].wall_hit_content - 1; // 0 is empty space, so there is off-by-one issue
     int texture_width = wall_textures[texture_num].width;
     int texture_height = wall_textures[texture_num].height;
 
@@ -494,40 +374,23 @@ void generate_3d_projection() {
       int texture_offset_y = distance_from_top * ((float)texture_height / projected_wall_height);
       
       uint32_t texel_color = wall_textures[texture_num].texture_buffer[(texture_width * texture_offset_y) + texture_offset_x];
-      color_buffer[(WINDOW_WIDTH * y) + i] = texel_color;
+      draw_pixel(x, y, texel_color);
     }
 
     // Floor render
     for (int y = wall_bottom_pixel; y < WINDOW_HEIGHT; y++) {
-        color_buffer[(WINDOW_WIDTH * y) + i] = 0xFFABABAB;
+        draw_pixel(x, y,  0xFFABABAB);
     }
   } 
 }
 
-void clear_color_buffer(uint32_t color) {
-  if (color_buffer) {
-    for (int x = 0; x < WINDOW_WIDTH; x++) {
-      for (int y = 0; y < WINDOW_HEIGHT; y++) {
-        color_buffer[(WINDOW_WIDTH * y) + x] = color;
-      }
-    }
-  }
-}
-
-void render_color_buffer() {
-  int pitch = (int)(sizeof(uint32_t) * (uint32_t)WINDOW_WIDTH);
-  SDL_UpdateTexture(color_buffer_texture, NULL, color_buffer, pitch);
-  SDL_RenderCopy(renderer, color_buffer_texture, NULL, NULL);
-}
 
 void render() {
-  SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-  SDL_RenderClear(renderer);
+  // SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+  // SDL_RenderClear(renderer);
 
-  generate_3d_projection();
-
-  render_color_buffer();
   clear_color_buffer(0xFF000000);
+  generate_3d_projection();
 
   if (should_display_minimap) {
     render_map();
@@ -535,7 +398,12 @@ void render() {
     render_player();
   }
 
-  SDL_RenderPresent(renderer); 
+  render_color_buffer();
+}
+
+void release_resources(void) {
+  free_wall_textures(wall_textures);
+  destroy_window();
 }
 
 int main() {
@@ -548,7 +416,7 @@ int main() {
     render();
   }
 
-  destroy_window();
+  release_resources();
 
   return 0;
 }
