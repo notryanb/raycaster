@@ -1,6 +1,7 @@
 #include "constants.h"
 #include "graphics.h"
 
+#include <math.h>
 #include <SDL2/SDL.h>
 
 static SDL_Window* window = NULL;
@@ -90,4 +91,24 @@ void draw_rect(int x, int y, int width, int height, uint32_t color) {
       draw_pixel(i, j, color);
     }
   }  
+}
+
+void draw_line(int x0, int y0, int x1, int y1, uint32_t color) {
+  int dx = x1 - x0;
+  int dy = y1 - y0;
+
+  int side_length = abs(dx) >= abs(dy) ? abs(dx) : abs(dy);
+
+  float x_inc = dx / (float)side_length;
+  float y_inc = dy / (float)side_length;
+
+  float current_x = x0;
+  float current_y = y0;
+
+  for (int i = 0; i < side_length; i++) {
+    draw_pixel(round(current_x), round(current_y), color);
+    current_x += x_inc;
+    current_y += y_inc;
+  }
+  
 }
