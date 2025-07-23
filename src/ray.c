@@ -6,14 +6,12 @@ float degrees_to_radians(float degrees) {
   return degrees * (PI / 180.0f);
 }
 
-float normalize_angle(float angle) {
-  angle = remainder(angle, TWO_PI);
+void normalize_angle(float* angle) {
+  *angle = remainder(*angle, TWO_PI);
 
-  if (angle < 0) {
-    angle += TWO_PI;
+  if (*angle < 0) {
+    *angle += TWO_PI;
   }
-
-  return angle;
 }
 
 float distance_between_points(float x1, float y1, float x2, float y2) {
@@ -21,7 +19,7 @@ float distance_between_points(float x1, float y1, float x2, float y2) {
 }
 
 void cast_ray(float ray_angle, int strip_id) {
-  ray_angle = normalize_angle(ray_angle);
+  normalize_angle(&ray_angle);
 
   bool is_ray_facing_down = ray_angle > 0 && ray_angle < PI;
   bool is_ray_facing_up = !is_ray_facing_down;
@@ -153,7 +151,7 @@ void cast_all_rays() {
   for (int col = 0; col < NUM_RAYS; col++) {
     // Get the angle of increment. This is based on the fact that the "hits" will always be equally distanced apart,
     // reducing FOV distortions that curve walls at the extreme of our FOV.
-    float angle = player.rotation_angle + atan((col - NUM_RAYS / 2) / DISTANCE_TO_PROJECTION_PLANE);
+    float angle = player.rotation_angle + atan((col - NUM_RAYS / 2.0f) / (float)DISTANCE_TO_PROJECTION_PLANE);
     cast_ray(angle, col);
   }
 }

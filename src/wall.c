@@ -34,7 +34,12 @@ void generate_3d_projection(texture_t* wall_textures) {
       int distance_from_top = y + ((int)projected_wall_height / 2) - (WINDOW_HEIGHT / 2);
       int texture_offset_y = distance_from_top * ((float)texture_height / projected_wall_height);
       
-      uint32_t texel_color = wall_textures[texture_num].texture_buffer[(texture_width * texture_offset_y) + texture_offset_x];
+      color_t texel_color = wall_textures[texture_num].texture_buffer[(texture_width * texture_offset_y) + texture_offset_x];
+
+      if (rays[x].was_hit_vertical) {
+        change_color_intensity(&texel_color, 0.55f);
+      }
+
       draw_pixel(x, y, texel_color);
     }
 

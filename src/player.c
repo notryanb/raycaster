@@ -8,8 +8,8 @@ player_t player = {
   .turn_direction = 0,
   .walk_direction = 0,
   .move_speed = 200.0f,
-  .rotation_angle = 90.0f * (PI / 180.0f),
-  .rotation_speed = 45.0f * (PI / 180.0f)
+  .rotation_angle = 215.0f * (PI / 180.0f),
+  .rotation_speed = 60.0f * (PI / 180.0f)
 };
 
 void move_player(float delta_time) {

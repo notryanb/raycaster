@@ -21,11 +21,10 @@ typedef struct {
 extern ray_t rays[NUM_RAYS];
 
 float degrees_to_radians(float degrees);
-float normalize_angle(float angle);
+void normalize_angle(float* angle);
 float distance_between_points(float x1, float y1, float x2, float y2);
 void cast_ray(float ray_angle, int strip_id);
 void cast_all_rays(void);
 void render_rays(void);
-
 
 #endif
