@@ -14,6 +14,7 @@ player_t player = {
 
 void move_player(float delta_time) {
   player.rotation_angle += player.turn_direction * player.rotation_speed * delta_time;
+  normalize_angle(&player.rotation_angle);
 
   float move_step = player.walk_direction * player.move_speed * delta_time;
   float new_player_x = player.x + cos(player.rotation_angle) * move_step;

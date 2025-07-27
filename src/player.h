@@ -4,6 +4,7 @@
 #include "constants.h"
 #include "graphics.h"
 #include "map.h"
+#include "utils.h"
 
 #include <math.h>
 

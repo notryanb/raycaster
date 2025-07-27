@@ -17,13 +17,13 @@
 // 16:10 ratio
 #define WINDOW_WIDTH 1280
 #define WINDOW_HEIGHT 800
-#define NUM_TEXTURES 9
+#define NUM_TEXTURES 14
 
 // In Radians
 #define FOV_ANGLE (60 * PI / 180)
 
 #define NUM_RAYS WINDOW_WIDTH
-#define DISTANCE_TO_PROJECTION_PLANE ((WINDOW_WIDTH / 2) / tan(FOV_ANGLE / 2))
+#define DISTANCE_TO_PROJECTION_PLANE ((WINDOW_WIDTH / 2.0f) / tan(FOV_ANGLE / 2.0f))
 
 #define FPS 30
 #define FRAME_TIME_LENGTH (1000 / FPS)

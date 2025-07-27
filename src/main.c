@@ -3,6 +3,7 @@
 #include "map.h"
 #include "player.h"
 #include "ray.h"
+#include "sprite.h"
 #include "textures.h"
 #include "wall.h"
 
@@ -15,7 +16,7 @@
 bool is_game_running = false;
 int ticks_last_frame = 0;
 bool should_display_minimap = false;
-texture_t wall_textures[NUM_TEXTURES];
+texture_t textures[NUM_TEXTURES];
 
 void process_input() {
   SDL_Event event;
@@ -72,7 +73,7 @@ void process_input() {
 }
 
 void setup() {
-  load_wall_textures(wall_textures);
+  load_textures(textures);
 }
 
 void update() {
@@ -93,19 +94,21 @@ void update() {
 
 void render() {
   clear_color_buffer(0xFF000000);
-  generate_3d_projection(wall_textures);
+  generate_3d_projection(textures);
+  render_sprite_projection(textures);
 
   if (should_display_minimap) {
     render_map();
     render_rays();
     render_player();
+    render_map_sprites();
   }
 
   render_color_buffer();
 }
 
 void release_resources(void) {
-  free_wall_textures(wall_textures);
+  free_textures(textures);
   destroy_window();
 }
 
